@@ -3,3 +3,7 @@ pytest-asyncio
 pytest-homeassistant-custom-component
 homeassistant
 aioresponses
+# <0.8 avoids pulling an aiohttp newer than what the pinned `homeassistant`
+# version above requires (aiohttp-cors 0.8+ needs aiohttp>=3.9) - needed for
+# the websocket_api/http component used by hass_ws_client in tests.
+aiohttp-cors<0.8

@@ -6,13 +6,18 @@ __pycache__/
 
 # Virtual environments (local test envs, not committed)
 .venv/
-.venv-test/
-.venv-wsl/
+.venv-test*/
+.venv-wsl*/
 venv/
 
 # Coverage
 .coverage
 htmlcov/
+
+# Frontend (frontend/ is dev-only source - see frontend/README notes in the
+# implementation plan; only custom_components/.../www/*.js is committed)
+frontend/node_modules/
+frontend/dist/
 
 # Editor / OS
 .idea/

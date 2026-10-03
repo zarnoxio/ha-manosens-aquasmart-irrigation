@@ -23,7 +23,9 @@ from .const import (
     SUPPORTED_SCHEMA_VERSION,
 )
 from .coordinator import AquaSmartDataUpdateCoordinator
+from .frontend import async_register_frontend
 from .models import AquaSmartRuntimeData
+from .websocket_api import async_register_websocket_api
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -89,6 +91,8 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     entry.async_on_unload(entry.add_update_listener(_async_update_listener))
 
     _async_register_services(hass)
+    async_register_websocket_api(hass)
+    async_register_frontend(hass)
     return True
 
 

@@ -13,6 +13,7 @@ Home Assistant custom integration for the [AquaSmart irrigation controller](http
 - Buttons: force-close all valves, reset inverter fault.
 - Services: `aquasmart_irrigation.start_zone` (custom duration), `aquasmart_irrigation.suspend` (hours or vacation mode).
 - Config Flow setup (no YAML), with automatic re-authentication if the API token is revoked.
+- **AquaSmart Flow Card** — a Lovelace dashboard card showing a real-time hydraulic diagram (tank → pump/pressure → flow meter → zones), mirroring the controller's own web UI. Registered automatically after setup, no manual "Resources" step. Add it via **Edit Dashboard → Add Card → AquaSmart Flow Card** and pick your controller device.
 
 ## Requirements
 
@@ -52,10 +53,24 @@ This integration targets the controller's `/api/ha/v1/*` contract, `schema_versi
 
 ## Development
 
+Python (integration):
+
 ```bash
 pip install -r requirements_test.txt
 pytest
 ```
+
+Frontend (AquaSmart Flow Card — Lit + TypeScript, built with esbuild):
+
+```bash
+cd frontend
+npm install
+npm run typecheck
+npm test              # runs in a real headless Chromium via @web/test-runner
+npm run build         # regenerates ../custom_components/aquasmart_irrigation/www/aquasmart-flow-card.js
+```
+
+The built `www/aquasmart-flow-card.js` is committed to the repo (HACS installs only copy `custom_components/`, no Node/npm on the end user's Home Assistant). After changing anything under `frontend/src/`, always run `npm run build` and commit the regenerated file — CI fails the build if it's out of sync with the source.
 
 ## License
 

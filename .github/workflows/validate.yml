@@ -28,6 +28,30 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
-          python-version: "3.12"
+          # 3.10 matches what pytest-homeassistant-custom-component's pinned
+          # (older) homeassistant release actually supports - verified
+          # locally under this version; 3.12 was untested and risked CI
+          # breakage from an HA/Python compatibility mismatch unrelated to
+          # this project's own code.
+          python-version: "3.10"
       - run: pip install -r requirements_test.txt
       - run: pytest
+
+  frontend:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - run: npm ci
+        working-directory: frontend
+      - run: npm run typecheck
+        working-directory: frontend
+      - run: npx playwright install --with-deps chromium
+        working-directory: frontend
+      - run: npm test
+        working-directory: frontend
+      - run: npm run build
+        working-directory: frontend
+      - run: git diff --exit-code custom_components/aquasmart_irrigation/www/aquasmart-flow-card.js

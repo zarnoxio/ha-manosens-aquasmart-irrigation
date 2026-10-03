@@ -41,6 +41,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry, async_add_e
     for zone in discovery.get("zones", []):
         entities.append(AquaSmartZoneDeficitSensor(coordinator, zone))
         entities.append(AquaSmartZoneNextActionSensor(coordinator, zone))
+        entities.append(AquaSmartZoneSessionVolumeSensor(coordinator, zone))
 
     for sensor_cfg in discovery.get("sensors", []):
         s_type = sensor_cfg.get("type")
@@ -110,6 +111,23 @@ class AquaSmartZoneNextActionSensor(AquaSmartEntity, SensorEntity):
             return None
 
 
+class AquaSmartZoneSessionVolumeSensor(AquaSmartEntity, SensorEntity):
+    """Liters delivered so far in the zone's current run; 0 while idle - see session_volume_liters in the controller's get_ha_status()."""
+
+    _attr_native_unit_of_measurement = UnitOfVolume.LITERS
+    _attr_icon = "mdi:cup-water"
+    _attr_state_class = SensorStateClass.MEASUREMENT
+
+    def __init__(self, coordinator: AquaSmartDataUpdateCoordinator, zone: dict) -> None:
+        self._zone_id = zone["id"]
+        super().__init__(coordinator, f"zone_{self._zone_id}_session_volume")
+        self._attr_name = f"{zone.get('name') or self._zone_id} session volume"
+
+    @property
+    def native_value(self) -> Any:
+        return self.coordinator.data.get("zones", {}).get(self._zone_id, {}).get("session_volume_liters")
+
+
 class AquaSmartLevelSensor(AquaSmartEntity, SensorEntity):
     _attr_native_unit_of_measurement = "m"
     _attr_icon = "mdi:waves-arrow-up"
@@ -123,6 +141,10 @@ class AquaSmartLevelSensor(AquaSmartEntity, SensorEntity):
     @property
     def native_value(self) -> Any:
         return self.coordinator.data.get("sensors", {}).get(self._sensor_id, {}).get("level_m")
+
+    @property
+    def extra_state_attributes(self) -> dict[str, Any]:
+        return {"volume_liters": self.coordinator.data.get("sensors", {}).get(self._sensor_id, {}).get("volume_liters")}
 
 
 class AquaSmartFlowRateSensor(AquaSmartEntity, SensorEntity):
