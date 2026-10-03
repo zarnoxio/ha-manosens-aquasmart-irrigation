@@ -3,12 +3,15 @@ from __future__ import annotations
 
 import logging
 from datetime import timedelta
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.exceptions import ConfigEntryAuthFailed
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
+
+if TYPE_CHECKING:
+    from .number import AquaSmartZoneDurationNumber
 
 from .api import AquaSmartApiClient, AquaSmartAuthError, AquaSmartConnectionError
 from .const import DEFAULT_FALLBACK_POLL_INTERVAL, DOMAIN
@@ -52,6 +55,12 @@ class AquaSmartDataUpdateCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         # discovery() call, before the first refresh - static description of
         # zones/actuators/sensors, not runtime state. See api.AquaSmartApiClient.discovery.
         self.discovery: dict[str, Any] = {}
+
+        # Populated by number.py's async_setup_entry - lets switch.py's
+        # AquaSmartZoneSwitch read the user-configurable per-zone duration
+        # (number.<zone>_duration) at turn_on() time without guessing an
+        # entity_id. See docs/implementation_plans/zone_manual_duration_number.md.
+        self.zone_duration_numbers: dict[str, "AquaSmartZoneDurationNumber"] = {}
 
     async def _async_update_data(self) -> dict[str, Any]:
         try:

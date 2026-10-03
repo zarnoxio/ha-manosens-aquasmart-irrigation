@@ -29,7 +29,13 @@ from .websocket_api import async_register_websocket_api
 
 _LOGGER = logging.getLogger(__name__)
 
-PLATFORMS: list[Platform] = [Platform.SWITCH, Platform.SENSOR, Platform.BINARY_SENSOR, Platform.BUTTON]
+PLATFORMS: list[Platform] = [
+    Platform.SWITCH,
+    Platform.SENSOR,
+    Platform.BINARY_SENSOR,
+    Platform.BUTTON,
+    Platform.NUMBER,
+]
 
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:

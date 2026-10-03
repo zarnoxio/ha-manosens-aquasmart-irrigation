@@ -7,8 +7,9 @@ Home Assistant custom integration for the [AquaSmart irrigation controller](http
 ## Features
 
 - Real-time state via WebSocket push (`local_push`): zones, valves, the frequency inverter (pump), suspension/vacation mode, winter mode.
-- Switches: main water supply, winter mode, vacation mode, and one per irrigation zone.
-- Sensors: inverter pressure/frequency/current, per-zone water deficit and next scheduled action, tank level, flow rate and totalizer.
+- Switches: main water supply, winter mode, vacation mode, and one per irrigation zone. A zone switch **always** turns the zone on for a bounded duration, never indefinitely — the controller enforces the cutoff itself, independent of Home Assistant.
+- Numbers: per-zone manual-start duration (`number.<zone>_duration`, default 600s/10min, 1–86400s) — adjust right from the dashboard how long `switch.<zone>` runs for; persists across HA restarts.
+- Sensors: inverter pressure/frequency/current, per-zone water deficit, session volume and next scheduled action, tank level, flow rate and totalizer.
 - Binary sensors: inverter fault, inverter running, suspended.
 - Buttons: force-close all valves, reset inverter fault.
 - Services: `aquasmart_irrigation.start_zone` (custom duration), `aquasmart_irrigation.suspend` (hours or vacation mode).

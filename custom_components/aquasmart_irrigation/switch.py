@@ -103,9 +103,12 @@ class AquaSmartVacationModeSwitch(AquaSmartEntity, SwitchEntity):
 
 class AquaSmartZoneSwitch(AquaSmartEntity, SwitchEntity):
     """
-    turn_on starts the zone for `default_duration` seconds (configurable via the
-    integration's Options Flow); use the `aquasmart_irrigation.start_zone`
-    service instead when a one-off custom duration is needed.
+    turn_on always starts the zone for a bounded duration - never indefinitely,
+    since leaving a valve open with no limit is exactly the mistake this is
+    meant to prevent. The duration comes from this zone's number.<zone>_duration
+    entity (number.py) when present, so it's adjustable right from the
+    dashboard; `_default_duration` (the integration's Options Flow setting) is
+    only a fallback for the unlikely case that entity isn't available yet.
     """
 
     # No _attr_translation_key here - the zone's display name comes directly
@@ -132,7 +135,13 @@ class AquaSmartZoneSwitch(AquaSmartEntity, SwitchEntity):
         }
 
     async def async_turn_on(self, **kwargs: Any) -> None:
-        await self.coordinator.client.start_zone(self._zone_id, self._default_duration)
+        duration_number = self.coordinator.zone_duration_numbers.get(self._zone_id)
+        duration = (
+            int(duration_number.native_value)
+            if duration_number is not None and duration_number.native_value
+            else self._default_duration
+        )
+        await self.coordinator.client.start_zone(self._zone_id, duration)
         await self.coordinator.async_request_refresh()
 
     async def async_turn_off(self, **kwargs: Any) -> None:
