@@ -52,6 +52,8 @@ Copy `custom_components/aquasmart_irrigation/` into your Home Assistant `config/
 
 This integration targets the controller's `/api/ha/v1/*` contract, `schema_version: 1`. If the controller reports a different schema version, setup will fail with a clear error rather than behaving unpredictably — update this integration (or the controller) to matching versions.
 
+The integration's icon and logo are shipped in `custom_components/aquasmart_irrigation/brand/` and are shown by Home Assistant 2026.3 and newer; older versions fall back to the generic placeholder icon.
+
 ## Development
 
 Python (integration):
