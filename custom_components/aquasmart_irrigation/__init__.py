@@ -98,7 +98,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
     _async_register_services(hass)
     async_register_websocket_api(hass)
-    async_register_frontend(hass)
+    await async_register_frontend(hass)
     return True
 
 

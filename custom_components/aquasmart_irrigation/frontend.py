@@ -19,7 +19,7 @@ CARD_FILENAME = "aquasmart-flow-card.js"
 CARD_URL_PATH = f"/aquasmart_irrigation_files/{CARD_FILENAME}"
 
 
-def async_register_frontend(hass: HomeAssistant) -> None:
+async def async_register_frontend(hass: HomeAssistant) -> None:
     """Idempotent: safe to call once per config entry setup on a shared hass instance."""
     flag = f"{DOMAIN}_frontend_registered"
     if hass.data.get(flag):
@@ -35,9 +35,28 @@ def async_register_frontend(hass: HomeAssistant) -> None:
         return
 
     www_dir = Path(__file__).parent / "www"
-    # register_static_path (sync) rather than the newer async_register_static_paths:
-    # the latter only exists on recent HA core releases - see the same
-    # broad-compatibility reasoning in coordinator.py/__init__.py, verified
-    # against an older HA install in this project's test suite.
-    hass.http.register_static_path(CARD_URL_PATH, str(www_dir / CARD_FILENAME), cache_headers=False)
+    file_path = str(www_dir / CARD_FILENAME)
+
+    try:
+        if hasattr(hass.http, "async_register_static_paths"):
+            # Current HA core (confirmed on a live 2026 install): the old sync
+            # register_static_path() was fully REMOVED, not just deprecated -
+            # calling it raises AttributeError and aborts config entry setup.
+            from homeassistant.components.http import StaticPathConfig
+
+            await hass.http.async_register_static_paths(
+                [StaticPathConfig(CARD_URL_PATH, file_path, cache_headers=False)]
+            )
+        else:
+            # Older HA core releases (pre ~2024.7, e.g. this project's own
+            # pytest-homeassistant-custom-component test pin) only have the
+            # sync form - async_register_static_paths doesn't exist there yet.
+            hass.http.register_static_path(CARD_URL_PATH, file_path, cache_headers=False)
+    except Exception:
+        _LOGGER.exception(
+            "Failed to register aquasmart-flow-card static path - entities/control still "
+            "work, but the dashboard card will not be available until this is fixed"
+        )
+        return
+
     add_extra_js_url(hass, CARD_URL_PATH)
