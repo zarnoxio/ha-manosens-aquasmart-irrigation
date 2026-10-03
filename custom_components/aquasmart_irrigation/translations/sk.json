@@ -1,0 +1,83 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Pripojiť AquaSmart Irrigation Controller",
+        "data": {
+          "host": "Host",
+          "port": "Port",
+          "api_token": "API token",
+          "use_https": "Použiť HTTPS"
+        }
+      },
+      "reauth_confirm": {
+        "title": "Znova overiť AquaSmart Irrigation Controller",
+        "data": {
+          "api_token": "Nový API token"
+        }
+      }
+    },
+    "error": {
+      "invalid_auth": "Neplatný API token",
+      "cannot_connect": "Nepodarilo sa pripojiť ku controlleru",
+      "unsupported_schema_version": "Controller hlási verziu API, ktorú táto integrácia nepodporuje",
+      "unknown": "Neočakávaná chyba"
+    },
+    "abort": {
+      "already_configured": "Tento controller je už nakonfigurovaný",
+      "reauth_successful": "Opätovné overenie bolo úspešné"
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "data": {
+          "fallback_poll_interval": "Záložný interval dopytovania (sekundy)",
+          "default_zone_duration": "Predvolené trvanie behu zóny (sekundy)"
+        }
+      }
+    }
+  },
+  "entity": {
+    "switch": {
+      "main_water": { "name": "Hlavný prívod vody" },
+      "winter_mode": { "name": "Zimný režim" },
+      "vacation_mode": { "name": "Režim Dovolenka" }
+    },
+    "sensor": {
+      "inverter_pressure": { "name": "Tlak meniča" },
+      "inverter_target_pressure": { "name": "Cieľový tlak meniča" },
+      "inverter_frequency": { "name": "Frekvencia meniča" },
+      "inverter_current": { "name": "Prúd meniča" }
+    },
+    "binary_sensor": {
+      "inverter_fault": { "name": "Porucha meniča" },
+      "inverter_running": { "name": "Menič beží" },
+      "suspended": { "name": "Pozastavené" }
+    },
+    "button": {
+      "force_close_all": { "name": "Nasilu zatvoriť všetky ventily" },
+      "reset_inverter_fault": { "name": "Resetovať poruchu meniča" }
+    }
+  },
+  "services": {
+    "start_zone": {
+      "name": "Spustiť zónu",
+      "description": "Spustí konkrétnu zónu na vlastné trvanie, bez ohľadu na jej plány.",
+      "fields": {
+        "config_entry_id": { "name": "Controller", "description": "Ktorému AquaSmart controlleru to poslať." },
+        "zone_id": { "name": "ID zóny", "description": "ID zóny tak, ako ho hlási controller." },
+        "duration": { "name": "Trvanie", "description": "Ako dlho má zóna bežať, v sekundách." }
+      }
+    },
+    "suspend": {
+      "name": "Pozastaviť závlahu",
+      "description": "Pozastaví automatickú závlahu na daný počet hodín, alebo natrvalo.",
+      "fields": {
+        "config_entry_id": { "name": "Controller", "description": "Ktorému AquaSmart controlleru to poslať." },
+        "hours": { "name": "Hodiny", "description": "Počet hodín, na ktoré pozastaviť." },
+        "vacation": { "name": "Režim Dovolenka", "description": "Pozastaviť natrvalo namiesto pevného počtu hodín." }
+      }
+    }
+  }
+}

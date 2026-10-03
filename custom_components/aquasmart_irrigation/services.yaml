@@ -1,0 +1,59 @@
+start_zone:
+  name: Start zone
+  description: >-
+    Starts a specific irrigation zone for a custom duration, overriding its
+    schedules. Prefer this over the zone switch when you need a duration other
+    than the configured default.
+  fields:
+    config_entry_id:
+      name: Controller
+      description: Which AquaSmart controller to send this to.
+      required: true
+      selector:
+        config_entry:
+          integration: aquasmart_irrigation
+    zone_id:
+      name: Zone ID
+      description: >-
+        The zone's id as reported by the controller (see the zone switch
+        entity's "zone_id" attribute, or GET /api/ha/v1/discovery).
+      required: true
+      selector:
+        text:
+    duration:
+      name: Duration
+      description: How long to run the zone, in seconds (1-86400).
+      required: true
+      selector:
+        number:
+          min: 1
+          max: 86400
+          unit_of_measurement: seconds
+
+suspend:
+  name: Suspend irrigation
+  description: >-
+    Pauses all scheduled irrigation on a controller for a number of hours, or
+    indefinitely (vacation mode).
+  fields:
+    config_entry_id:
+      name: Controller
+      description: Which AquaSmart controller to send this to.
+      required: true
+      selector:
+        config_entry:
+          integration: aquasmart_irrigation
+    hours:
+      name: Hours
+      description: Number of hours to suspend for (omit when using vacation mode).
+      selector:
+        number:
+          min: 1
+          max: 8760
+          unit_of_measurement: hours
+    vacation:
+      name: Vacation mode
+      description: Suspend indefinitely instead of for a fixed number of hours.
+      default: false
+      selector:
+        boolean:

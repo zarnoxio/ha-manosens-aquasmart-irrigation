@@ -1,0 +1,83 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Connect to AquaSmart Irrigation Controller",
+        "data": {
+          "host": "Host",
+          "port": "Port",
+          "api_token": "API token",
+          "use_https": "Use HTTPS"
+        }
+      },
+      "reauth_confirm": {
+        "title": "Re-authenticate AquaSmart Irrigation Controller",
+        "data": {
+          "api_token": "New API token"
+        }
+      }
+    },
+    "error": {
+      "invalid_auth": "Invalid API token",
+      "cannot_connect": "Failed to connect to the controller",
+      "unsupported_schema_version": "The controller reports an API version this integration does not support",
+      "unknown": "Unexpected error"
+    },
+    "abort": {
+      "already_configured": "This controller is already configured",
+      "reauth_successful": "Re-authentication was successful"
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "data": {
+          "fallback_poll_interval": "Fallback poll interval (seconds)",
+          "default_zone_duration": "Default zone run duration (seconds)"
+        }
+      }
+    }
+  },
+  "entity": {
+    "switch": {
+      "main_water": { "name": "Main water" },
+      "winter_mode": { "name": "Winter mode" },
+      "vacation_mode": { "name": "Vacation mode" }
+    },
+    "sensor": {
+      "inverter_pressure": { "name": "Inverter pressure" },
+      "inverter_target_pressure": { "name": "Inverter target pressure" },
+      "inverter_frequency": { "name": "Inverter frequency" },
+      "inverter_current": { "name": "Inverter current" }
+    },
+    "binary_sensor": {
+      "inverter_fault": { "name": "Inverter fault" },
+      "inverter_running": { "name": "Inverter running" },
+      "suspended": { "name": "Suspended" }
+    },
+    "button": {
+      "force_close_all": { "name": "Force close all valves" },
+      "reset_inverter_fault": { "name": "Reset inverter fault" }
+    }
+  },
+  "services": {
+    "start_zone": {
+      "name": "Start zone",
+      "description": "Starts a specific irrigation zone for a custom duration, overriding its schedules.",
+      "fields": {
+        "config_entry_id": { "name": "Controller", "description": "Which AquaSmart controller to send this to." },
+        "zone_id": { "name": "Zone ID", "description": "The zone's id as reported by the controller." },
+        "duration": { "name": "Duration", "description": "How long to run the zone, in seconds." }
+      }
+    },
+    "suspend": {
+      "name": "Suspend irrigation",
+      "description": "Pauses all scheduled irrigation for a number of hours, or indefinitely.",
+      "fields": {
+        "config_entry_id": { "name": "Controller", "description": "Which AquaSmart controller to send this to." },
+        "hours": { "name": "Hours", "description": "Number of hours to suspend for." },
+        "vacation": { "name": "Vacation mode", "description": "Suspend indefinitely instead of a fixed number of hours." }
+      }
+    }
+  }
+}

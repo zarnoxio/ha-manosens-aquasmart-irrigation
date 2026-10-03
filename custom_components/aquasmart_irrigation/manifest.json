@@ -1,0 +1,11 @@
+{
+  "domain": "aquasmart_irrigation",
+  "name": "AquaSmart Irrigation Controller",
+  "codeowners": ["@YOUR_GITHUB_USERNAME"],
+  "config_flow": true,
+  "documentation": "https://github.com/YOUR_GITHUB_USERNAME/aquasmart-irrigation-ha",
+  "iot_class": "local_push",
+  "issue_tracker": "https://github.com/YOUR_GITHUB_USERNAME/aquasmart-irrigation-ha/issues",
+  "requirements": [],
+  "version": "0.1.0"
+}
