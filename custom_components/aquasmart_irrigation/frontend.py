@@ -111,7 +111,16 @@ async def _async_register_as_lovelace_resource(hass: HomeAssistant, card_url: st
     try:
         from homeassistant.components.lovelace.resources import ResourceStorageCollection
 
-        resources = hass.data.get("lovelace", {}).get("resources")
+        lovelace_data = hass.data.get("lovelace")
+        # Older HA core (this project's own test pin) stores a plain dict
+        # here; a live 2026 install has since refactored it into a typed
+        # LovelaceData object (attribute access, no .get()) - same split as
+        # the static-path API above, handled the same defensive way.
+        if isinstance(lovelace_data, dict):
+            resources = lovelace_data.get("resources")
+        else:
+            resources = getattr(lovelace_data, "resources", None)
+
         if not isinstance(resources, ResourceStorageCollection):
             return False
 

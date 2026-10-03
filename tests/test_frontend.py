@@ -140,3 +140,23 @@ async def test_falls_back_to_extra_js_url_in_yaml_mode(hass) -> None:
         await async_register_frontend(hass)
 
     mock_add_js.assert_called_once_with(hass, VERSIONED_CARD_URL)
+
+
+async def test_registers_as_lovelace_resource_when_hass_data_is_typed_object(hass) -> None:
+    """Real-world bug this guards against: a live 2026 HA install has refactored
+    hass.data["lovelace"] from a plain dict into a typed LovelaceData object (attribute
+    access, no .get()) - AttributeError: 'LovelaceData' object has no attribute 'get'."""
+    hass.http = MagicMock(spec=["register_static_path"])
+    resources = _fake_resource_collection(existing_items=[])
+
+    class FakeLovelaceData:
+        def __init__(self, resources):
+            self.resources = resources
+
+    hass.data["lovelace"] = FakeLovelaceData(resources)
+
+    with patch("custom_components.aquasmart_irrigation.frontend.add_extra_js_url") as mock_add_js:
+        await async_register_frontend(hass)
+
+    resources.async_create_item.assert_awaited_once_with({"res_type": "module", "url": VERSIONED_CARD_URL})
+    mock_add_js.assert_not_called()
