@@ -14,9 +14,16 @@ with a mock instead.
 """
 from __future__ import annotations
 
+import json
+from pathlib import Path
 from unittest.mock import AsyncMock, MagicMock, patch
 
 from custom_components.aquasmart_irrigation.frontend import CARD_URL_PATH, async_register_frontend
+
+MANIFEST_VERSION = json.loads(
+    (Path(__file__).parent.parent / "custom_components" / "aquasmart_irrigation" / "manifest.json").read_text()
+)["version"]
+VERSIONED_CARD_URL = f"{CARD_URL_PATH}?v={MANIFEST_VERSION}"
 
 
 async def test_uses_async_register_static_paths_when_available(hass) -> None:
@@ -31,7 +38,7 @@ async def test_uses_async_register_static_paths_when_available(hass) -> None:
         await async_register_frontend(hass)
 
     fake_http.async_register_static_paths.assert_awaited_once()
-    mock_add_js.assert_called_once_with(hass, CARD_URL_PATH)
+    mock_add_js.assert_called_once_with(hass, VERSIONED_CARD_URL)
 
 
 async def test_falls_back_to_sync_register_static_path_on_older_ha(hass) -> None:
@@ -42,7 +49,7 @@ async def test_falls_back_to_sync_register_static_path_on_older_ha(hass) -> None
         await async_register_frontend(hass)
 
     fake_http.register_static_path.assert_called_once()
-    mock_add_js.assert_called_once_with(hass, CARD_URL_PATH)
+    mock_add_js.assert_called_once_with(hass, VERSIONED_CARD_URL)
 
 
 async def test_does_not_crash_when_http_component_unavailable(hass) -> None:
