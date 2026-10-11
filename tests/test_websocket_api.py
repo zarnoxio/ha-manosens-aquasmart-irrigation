@@ -1,7 +1,9 @@
 """Tests for the aquasmart_irrigation/diagram_entities WebSocket command used by the Lovelace card."""
 from __future__ import annotations
 
+import aiohttp
 from aioresponses import aioresponses
+from homeassistant.config_entries import ConfigEntryState
 from homeassistant.helpers import device_registry as dr
 
 from custom_components.aquasmart_irrigation.const import DOMAIN
@@ -62,3 +64,22 @@ async def test_diagram_entities_unknown_device_returns_empty_mapping(hass, mock_
     assert response["success"] is True
     assert response["result"]["tank_level_entity_id"] is None
     assert response["result"]["zones"] == []
+
+
+async def test_ws_command_available_while_controller_unreachable(hass, mock_config_entry, hass_ws_client) -> None:
+    """Real-world bug this guards against: the card's WS command (and JS file) used to be
+    registered only at the end of async_setup_entry, so while the controller was unreachable
+    (ConfigEntryNotReady retries, or simply HA still starting) the dashboard card
+    intermittently failed to load. Both are now registered in component-level async_setup."""
+    with aioresponses() as m:
+        m.get(f"{BASE_URL}/api/ha/v1/discovery", exception=aiohttp.ClientConnectionError("controller offline"))
+        await hass.config_entries.async_setup(mock_config_entry.entry_id)
+        await hass.async_block_till_done()
+
+    assert mock_config_entry.state is ConfigEntryState.SETUP_RETRY
+
+    client = await hass_ws_client(hass)
+    await client.send_json_auto_id({"type": "aquasmart_irrigation/diagram_entities", "device_id": "unknown"})
+    response = await client.receive_json()
+
+    assert response["success"] is True

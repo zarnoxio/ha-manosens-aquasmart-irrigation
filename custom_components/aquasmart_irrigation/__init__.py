@@ -37,6 +37,24 @@ PLATFORMS: list[Platform] = [
     Platform.NUMBER,
 ]
 
+CONFIG_SCHEMA = cv.config_entry_only_config_schema(DOMAIN)
+
+
+async def async_setup(hass: HomeAssistant, config: dict) -> bool:
+    """Register the dashboard card and its WebSocket command once, at HA startup.
+
+    Deliberately here and not in async_setup_entry: entry setup only finishes
+    after the controller answers discovery + the first refresh, and keeps
+    retrying (ConfigEntryNotReady) while it's unreachable. Until then the card's
+    static path would 404 and its WS command would be "unknown_command" -
+    the Lovelace resource itself is persisted, so the browser still tries to
+    load it on every page load and the card intermittently "doesn't exist"
+    after HA restarts or controller outages.
+    """
+    async_register_websocket_api(hass)
+    await async_register_frontend(hass)
+    return True
+
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     session = async_get_clientsession(hass)
@@ -97,8 +115,6 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     entry.async_on_unload(entry.add_update_listener(_async_update_listener))
 
     _async_register_services(hass)
-    async_register_websocket_api(hass)
-    await async_register_frontend(hass)
     return True
 
 

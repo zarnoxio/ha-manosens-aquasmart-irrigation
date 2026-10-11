@@ -10,6 +10,10 @@ import type { AquaSmartFlowCardConfig, DiagramEntities, DiagramZone } from "./ty
 const HYDROSTATIC_BAR_PER_METER = 0.0981;
 const TANK_FILL_REFERENCE_METERS = 2.0;
 
+// A failed diagram_entities lookup is usually transient (HA still starting up,
+// WebSocket reconnecting) - retry instead of showing a permanent error.
+const FETCH_RETRY_MS = 5000;
+
 const UNAVAILABLE_STATES = new Set(["unknown", "unavailable", undefined]);
 
 @customElement("aquasmart-flow-card")
@@ -21,6 +25,7 @@ export class AquaSmartFlowCard extends LitElement {
   @state() private _error?: string;
 
   private _entitiesRequested = false;
+  private _retryTimer?: number;
 
   public static async getConfigElement(): Promise<LovelaceCardEditor> {
     return document.createElement("aquasmart-flow-card-editor") as unknown as LovelaceCardEditor;
@@ -40,6 +45,7 @@ export class AquaSmartFlowCard extends LitElement {
       throw new Error("Vyber AquaSmart zariadenie v nastaveniach karty.");
     }
     this._config = config;
+    this._clearRetry();
     this._entitiesRequested = false;
     this._entities = undefined;
     this._error = undefined;
@@ -47,6 +53,25 @@ export class AquaSmartFlowCard extends LitElement {
 
   public getCardSize(): number {
     return 6;
+  }
+
+  public connectedCallback(): void {
+    super.connectedCallback();
+    // A retry pending at disconnect was cancelled - pick it up again.
+    if (!this._entities) this._entitiesRequested = false;
+    this.requestUpdate();
+  }
+
+  public disconnectedCallback(): void {
+    super.disconnectedCallback();
+    this._clearRetry();
+  }
+
+  private _clearRetry(): void {
+    if (this._retryTimer !== undefined) {
+      window.clearTimeout(this._retryTimer);
+      this._retryTimer = undefined;
+    }
   }
 
   protected updated(changed: PropertyValues): void {
@@ -58,13 +83,27 @@ export class AquaSmartFlowCard extends LitElement {
   }
 
   private async _fetchDiagramEntities(): Promise<void> {
+    const config = this._config;
     try {
-      this._entities = await this.hass.callWS<DiagramEntities>({
+      const entities = await this.hass.callWS<DiagramEntities>({
         type: "aquasmart_irrigation/diagram_entities",
-        device_id: this._config!.device_id,
+        device_id: config!.device_id,
       });
+      if (config !== this._config) return; // setConfig() ran meanwhile - its own fetch wins.
+      this._entities = entities;
+      this._error = undefined;
     } catch (err) {
-      this._error = `Nepodarilo sa načítať entity diagramu: ${err instanceof Error ? err.message : String(err)}`;
+      if (config !== this._config) return;
+      // callWS rejects with a plain {code, message} object, not an Error.
+      const message = (err as { message?: string } | undefined)?.message ?? String(err);
+      this._error = `Nepodarilo sa načítať entity diagramu: ${message}`;
+      if (this.isConnected) {
+        this._retryTimer = window.setTimeout(() => {
+          this._retryTimer = undefined;
+          this._entitiesRequested = false;
+          this.requestUpdate();
+        }, FETCH_RETRY_MS);
+      }
     }
   }
 
