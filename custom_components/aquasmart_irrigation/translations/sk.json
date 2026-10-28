@@ -53,7 +53,8 @@
     "binary_sensor": {
       "inverter_fault": { "name": "Porucha meniča" },
       "inverter_running": { "name": "Menič beží" },
-      "suspended": { "name": "Pozastavené" }
+      "suspended": { "name": "Pozastavené" },
+      "winter_valves_problem": { "name": "Zimný režim: ventily neotvorené" }
     },
     "button": {
       "force_close_all": { "name": "Nasilu zatvoriť všetky ventily" },

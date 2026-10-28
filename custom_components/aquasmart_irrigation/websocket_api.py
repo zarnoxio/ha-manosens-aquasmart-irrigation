@@ -70,6 +70,7 @@ def ws_diagram_entities(hass: HomeAssistant, connection: websocket_api.ActiveCon
             "flow_rate_entity_id": _find(entries, "_flow_rate"),
             "flow_total_entity_id": _find(entries, "_total"),
             "main_water_entity_id": _find(entries, "main_water"),
+            "winter_mode_entity_id": _find(entries, "winter_mode"),
             "zones": zones,
         },
     )

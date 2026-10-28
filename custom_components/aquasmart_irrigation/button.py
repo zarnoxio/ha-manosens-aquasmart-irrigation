@@ -22,11 +22,21 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry, async_add_e
 
 
 class AquaSmartForceCloseAllButton(AquaSmartEntity, ButtonEntity):
+    """
+    Unavailable in winter mode: the valves are then deliberately held open to
+    drain, and closing them would trap water (the controller refuses it with a
+    409 too). Deactivating winter mode is what closes them, in the safe order.
+    """
+
     _attr_translation_key = "force_close_all"
     _attr_icon = "mdi:valve-closed"
 
     def __init__(self, coordinator: AquaSmartDataUpdateCoordinator) -> None:
         super().__init__(coordinator, "force_close_all")
+
+    @property
+    def available(self) -> bool:
+        return super().available and not self.coordinator.data.get("winter_mode")
 
     async def async_press(self) -> None:
         await self.coordinator.client.force_close_all()

@@ -29,5 +29,7 @@ export interface DiagramEntities {
   flow_rate_entity_id: string | null;
   flow_total_entity_id: string | null;
   main_water_entity_id: string | null;
+  /** switch.<...>_winter_mode; its `valves_open` attribute is false when winterizing failed. */
+  winter_mode_entity_id: string | null;
   zones: DiagramZone[];
 }

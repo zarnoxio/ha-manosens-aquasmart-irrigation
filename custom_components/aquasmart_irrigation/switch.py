@@ -59,6 +59,12 @@ class AquaSmartWinterModeSwitch(AquaSmartEntity, SwitchEntity):
     def is_on(self) -> bool:
         return bool(self.coordinator.data.get("winter_mode"))
 
+    @property
+    def extra_state_attributes(self) -> dict[str, Any]:
+        # False while on = the controller could not confirm the pump stopped (or a
+        # valve failed), so the valves were NOT opened - see binary_sensor.winter_valves_problem.
+        return {"valves_open": self.coordinator.data.get("winter_valves_open")}
+
     async def async_turn_on(self, **kwargs: Any) -> None:
         await self.coordinator.client.set_winter_mode(True)
         await self.coordinator.async_request_refresh()

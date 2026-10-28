@@ -1,4 +1,4 @@
-"""Binary sensor platform for AquaSmart Irrigation Controller: inverter fault/running, suspended."""
+"""Binary sensor platform for AquaSmart Irrigation Controller: inverter fault/running, suspended, winter valves problem."""
 from __future__ import annotations
 
 from typing import Any
@@ -20,6 +20,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry, async_add_e
             AquaSmartInverterFaultSensor(coordinator),
             AquaSmartInverterRunningSensor(coordinator),
             AquaSmartSuspendedSensor(coordinator),
+            AquaSmartWinterValvesProblemSensor(coordinator),
         ]
     )
 
@@ -72,3 +73,27 @@ class AquaSmartSuspendedSensor(AquaSmartEntity, BinarySensorEntity):
     @property
     def extra_state_attributes(self) -> dict[str, Any]:
         return {"reason": self.coordinator.data.get("suspend_reason")}
+
+
+class AquaSmartWinterValvesProblemSensor(AquaSmartEntity, BinarySensorEntity):
+    """
+    On when winter mode is active but the valves are NOT open - the controller
+    opens them only after it has confirmed the inverter stopped, so a failed
+    confirmation (or a valve that did not open) leaves water standing in the
+    pipework to freeze. Unknown (None) on a controller too old to report
+    `winter_valves_open`.
+    """
+
+    _attr_device_class = BinarySensorDeviceClass.PROBLEM
+    _attr_translation_key = "winter_valves_problem"
+    _attr_icon = "mdi:snowflake-alert"
+
+    def __init__(self, coordinator: AquaSmartDataUpdateCoordinator) -> None:
+        super().__init__(coordinator, "winter_valves_problem")
+
+    @property
+    def is_on(self) -> bool | None:
+        data = self.coordinator.data
+        if "winter_valves_open" not in data:
+            return None
+        return bool(data.get("winter_mode")) and not data["winter_valves_open"]

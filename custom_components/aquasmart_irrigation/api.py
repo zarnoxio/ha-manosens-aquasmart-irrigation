@@ -11,14 +11,19 @@ import logging
 from typing import Any, Callable
 
 import aiohttp
+from homeassistant.exceptions import HomeAssistantError
 
 from .const import WS_RECONNECT_MAX_DELAY, WS_RECONNECT_MIN_DELAY
 
 _LOGGER = logging.getLogger(__name__)
 
 
-class AquaSmartApiError(Exception):
-    """Base error for AquaSmart API communication."""
+class AquaSmartApiError(HomeAssistantError):
+    """
+    Base error for AquaSmart API communication. A HomeAssistantError so that a
+    failed entity action / service call shows its message in the HA UI instead
+    of a generic "unknown error".
+    """
 
 
 class AquaSmartAuthError(AquaSmartApiError):
@@ -27,6 +32,30 @@ class AquaSmartAuthError(AquaSmartApiError):
 
 class AquaSmartConnectionError(AquaSmartApiError):
     """Raised when the controller cannot be reached at all."""
+
+
+class AquaSmartRequestError(AquaSmartApiError):
+    """
+    The controller answered but refused the request (any non-2xx other than 401).
+    The message is the controller's own `detail`, e.g. the 409 "Počas zimného
+    režimu nemožno spúšťať zóny." or the winter-mode 502 explaining which step
+    (inverter stop confirmation, a valve) failed.
+    """
+
+    def __init__(self, status: int, message: str) -> None:
+        super().__init__(message)
+        self.status = status
+
+
+async def _error_detail(resp: aiohttp.ClientResponse) -> str:
+    """The controller's FastAPI `detail` string, or a generic fallback (422 validation details are lists)."""
+    try:
+        detail = (await resp.json(content_type=None)).get("detail")
+    except (ValueError, AttributeError, aiohttp.ClientError):
+        detail = None
+    if isinstance(detail, str) and detail:
+        return detail
+    return f"Controller returned HTTP {resp.status}"
 
 
 class AquaSmartApiClient:
@@ -64,11 +93,12 @@ class AquaSmartApiClient:
             ) as resp:
                 if resp.status == 401:
                     raise AquaSmartAuthError(f"Unauthorized calling {path}")
-                resp.raise_for_status()
+                if resp.status >= 400:
+                    raise AquaSmartRequestError(resp.status, await _error_detail(resp))
                 if resp.content_type == "application/json":
                     return await resp.json()
                 return {}
-        except AquaSmartAuthError:
+        except (AquaSmartAuthError, AquaSmartRequestError):
             raise
         except (aiohttp.ClientError, asyncio.TimeoutError) as err:
             raise AquaSmartConnectionError(f"Error communicating with controller at {url}: {err}") from err

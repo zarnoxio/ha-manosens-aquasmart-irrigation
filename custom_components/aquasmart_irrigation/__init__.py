@@ -13,7 +13,7 @@ from homeassistant.exceptions import ConfigEntryAuthFailed, ConfigEntryNotReady
 from homeassistant.helpers import config_validation as cv
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 
-from .api import AquaSmartApiClient, AquaSmartAuthError, AquaSmartConnectionError, AquaSmartWebSocketListener
+from .api import AquaSmartApiClient, AquaSmartApiError, AquaSmartAuthError, AquaSmartWebSocketListener
 from .config_flow import UnsupportedSchemaVersion
 from .const import (
     CONF_API_TOKEN,
@@ -70,7 +70,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         discovery = await client.discovery()
     except AquaSmartAuthError as err:
         raise ConfigEntryAuthFailed("AquaSmart API token was rejected by the controller") from err
-    except AquaSmartConnectionError as err:
+    except AquaSmartApiError as err:
         raise ConfigEntryNotReady(str(err)) from err
 
     if discovery.get("schema_version") != SUPPORTED_SCHEMA_VERSION:

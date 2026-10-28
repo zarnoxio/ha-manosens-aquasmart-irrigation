@@ -133,9 +133,13 @@ export class AquaSmartFlowCard extends LitElement {
     }
 
     const e = this._entities;
+    // Winter mode: pump stopped, every valve held open to drain - an open valve then
+    // means "draining", not "watering" (same look as the controller's own dashboard).
+    const winter = this._state(e.winter_mode_entity_id) === "on";
+    const winterValvesOpen = this._attr(e.winter_mode_entity_id, "valves_open") !== false;
     const runningZones = e.zones.filter((z) => this._state(z.switch_entity_id) === "on");
     const pumpRunning = this._state(e.pump_running_entity_id) === "on";
-    const flowing = runningZones.length > 0 || pumpRunning;
+    const flowing = !winter && (runningZones.length > 0 || pumpRunning);
 
     const levelM = this._num(e.tank_level_entity_id);
     const volumeL = this._attr(e.tank_level_entity_id, "volume_liters") as number | undefined;
@@ -153,14 +157,23 @@ export class AquaSmartFlowCard extends LitElement {
     return html`
       <ha-card .header=${this._config?.title || "Hydraulický diagram prúdenia vody"}>
         <div class="card-content">
-          <div class="status-pill ${flowing ? "active" : ""}">
-            <span class="pulse-dot"></span>
-            <span
-              >${runningZones.length > 0
-                ? `Závlaha aktívna (${runningZones.length} ${runningZones.length === 1 ? "zóna" : "zóny"} otvorené)`
-                : "Systém v pohotovosti"}</span
-            >
-          </div>
+          ${winter
+            ? html`<div class="status-pill winter ${winterValvesOpen ? "" : "fault"}">
+                <ha-icon icon=${winterValvesOpen ? "mdi:snowflake" : "mdi:snowflake-alert"}></ha-icon>
+                <span
+                  >${winterValvesOpen
+                    ? "Zimný režim · vypúšťanie"
+                    : "Zimný režim · ventily NEOTVORENÉ (zastavenie čerpadla nepotvrdené)"}</span
+                >
+              </div>`
+            : html`<div class="status-pill ${flowing ? "active" : ""}">
+                <span class="pulse-dot"></span>
+                <span
+                  >${runningZones.length > 0
+                    ? `Závlaha aktívna (${runningZones.length} ${runningZones.length === 1 ? "zóna" : "zóny"} otvorené)`
+                    : "Systém v pohotovosti"}</span
+                >
+              </div>`}
 
           <div class="nodes">
             <div class="node ${flowing ? "active" : ""}">
@@ -181,7 +194,9 @@ export class AquaSmartFlowCard extends LitElement {
               <div class="metric-sub">
                 Cieľ: ${targetPressure !== undefined ? `${targetPressure.toFixed(2)} bar` : "--"}
               </div>
-              <div class="detail">Čerpadlo: <strong>${pumpRunning ? "ZAPNUTÉ" : "Vypnuté"}</strong></div>
+              <div class="detail">
+                Čerpadlo: <strong>${pumpRunning ? "ZAPNUTÉ" : winter ? "Vypnuté (zimný režim)" : "Vypnuté"}</strong>
+              </div>
               ${pumpFault ? html`<div class="detail fault-text">Porucha meniča</div>` : nothing}
             </div>
 
@@ -201,7 +216,9 @@ export class AquaSmartFlowCard extends LitElement {
 
             <div class="node manifold">
               <div class="node-header"><ha-icon icon="mdi:source-branch"></ha-icon><span>Rozdeľovač & zóny</span></div>
-              <div class="branches">${e.zones.map((z) => this._renderBranch(z))}</div>
+              <div class="branches">
+                ${e.zones.map((z) => (winter ? this._renderWinterBranch(z, winterValvesOpen) : this._renderBranch(z)))}
+              </div>
             </div>
           </div>
         </div>
@@ -226,6 +243,23 @@ export class AquaSmartFlowCard extends LitElement {
           ${running
             ? html`<mwc-button dense @click=${() => this._closeZone(zone.switch_entity_id)}>Zavrieť</mwc-button>`
             : nothing}
+        </div>
+      </div>
+    `;
+  }
+
+  private _renderWinterBranch(zone: DiagramZone, valvesOpen: boolean): TemplateResult {
+    const name = (this._attr(zone.switch_entity_id, "friendly_name") as string | undefined) ?? zone.zone_id;
+    // No close button: the controller refuses closing a valve in winter (409) - only
+    // deactivating winter mode closes them, after which the pump may start again.
+    return html`
+      <div class="branch winter ${valvesOpen ? "" : "fault"}">
+        <div class="branch-info">
+          <span class="branch-name">${name}</span>
+          <span class="branch-flow">Bez tlaku</span>
+        </div>
+        <div class="branch-actions">
+          <span class="branch-tag">${valvesOpen ? "VYPÚŠŤANIE" : "NEOTVORENÝ"}</span>
         </div>
       </div>
     `;
@@ -256,6 +290,17 @@ export class AquaSmartFlowCard extends LitElement {
     .status-pill.active {
       background: rgba(var(--rgb-success-color, 76, 175, 80), 0.18);
       color: var(--success-color);
+    }
+    .status-pill ha-icon {
+      --mdc-icon-size: 16px;
+    }
+    .status-pill.winter {
+      background: rgba(var(--rgb-info-color, 3, 169, 244), 0.15);
+      color: var(--info-color, var(--primary-color));
+    }
+    .status-pill.winter.fault {
+      background: rgba(var(--rgb-error-color, 219, 68, 55), 0.15);
+      color: var(--error-color);
     }
     .pulse-dot {
       width: 8px;
@@ -379,6 +424,16 @@ export class AquaSmartFlowCard extends LitElement {
     }
     .branch.active {
       background: rgba(var(--rgb-primary-color, 3, 169, 244), 0.12);
+    }
+    .branch.winter {
+      background: rgba(var(--rgb-info-color, 3, 169, 244), 0.1);
+    }
+    .branch.winter .branch-tag {
+      background: var(--info-color, var(--primary-color));
+      color: var(--text-primary-color, #fff);
+    }
+    .branch.winter.fault .branch-tag {
+      background: var(--error-color);
     }
     .branch-info {
       display: flex;

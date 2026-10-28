@@ -12,6 +12,7 @@ const DIAGRAM_ENTITIES: DiagramEntities = {
   flow_rate_entity_id: null,
   flow_total_entity_id: null,
   main_water_entity_id: "switch.garden_main_water",
+  winter_mode_entity_id: "switch.garden_winter_mode",
   zones: [
     {
       zone_id: "zone_1",
@@ -82,6 +83,46 @@ describe("aquasmart-flow-card", () => {
       service: "turn_off",
       data: { entity_id: "switch.garden_lawn" },
     });
+  });
+
+  async function renderCard(hass: ReturnType<typeof makeHass>): Promise<AquaSmartFlowCard> {
+    const el = (await fixture(html`<aquasmart-flow-card></aquasmart-flow-card>`)) as AquaSmartFlowCard;
+    el.setConfig({ type: "custom:aquasmart-flow-card", device_id: "device-1" });
+    el.hass = hass;
+    await el.updateComplete;
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    await el.updateComplete;
+    return el;
+  }
+
+  it("shows open valves as draining without a close button in winter mode", async () => {
+    const el = await renderCard(
+      makeHass({
+        "switch.garden_winter_mode": { state: "on", attributes: { valves_open: true } },
+        "binary_sensor.garden_inverter_running": { state: "off" },
+        "switch.garden_lawn": { state: "off", attributes: { friendly_name: "Lawn" } },
+      }),
+    );
+
+    const text = el.shadowRoot!.textContent ?? "";
+    expect(text).to.include("Zimný režim · vypúšťanie");
+    expect(text).to.include("VYPÚŠŤANIE");
+    expect(text).not.to.include("Systém v pohotovosti");
+    expect(el.shadowRoot!.querySelector("mwc-button")).to.not.exist;
+    expect(el.shadowRoot!.querySelector(".connector.active")).to.not.exist;
+  });
+
+  it("warns when winter mode is on but the valves could not be opened", async () => {
+    const el = await renderCard(
+      makeHass({
+        "switch.garden_winter_mode": { state: "on", attributes: { valves_open: false } },
+        "switch.garden_lawn": { state: "off", attributes: { friendly_name: "Lawn" } },
+      }),
+    );
+
+    const text = el.shadowRoot!.textContent ?? "";
+    expect(text).to.include("ventily NEOTVORENÉ");
+    expect(text).to.include("NEOTVORENÝ");
   });
 
   it("throws from setConfig when device_id is missing", async () => {

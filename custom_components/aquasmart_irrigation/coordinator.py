@@ -13,7 +13,7 @@ from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, Upda
 if TYPE_CHECKING:
     from .number import AquaSmartZoneDurationNumber
 
-from .api import AquaSmartApiClient, AquaSmartAuthError, AquaSmartConnectionError
+from .api import AquaSmartApiClient, AquaSmartApiError, AquaSmartAuthError
 from .const import DEFAULT_FALLBACK_POLL_INTERVAL, DOMAIN
 
 _LOGGER = logging.getLogger(__name__)
@@ -67,5 +67,5 @@ class AquaSmartDataUpdateCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             return await self.client.get_status()
         except AquaSmartAuthError as err:
             raise ConfigEntryAuthFailed("AquaSmart API token was rejected by the controller") from err
-        except AquaSmartConnectionError as err:
+        except AquaSmartApiError as err:
             raise UpdateFailed(str(err)) from err

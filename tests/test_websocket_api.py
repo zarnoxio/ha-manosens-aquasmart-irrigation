@@ -42,6 +42,7 @@ async def test_diagram_entities_resolves_all_roles(hass, mock_config_entry, hass
     assert result["flow_rate_entity_id"] is None  # MOCK_DISCOVERY has no flow sensor
     assert result["flow_total_entity_id"] is None
     assert result["main_water_entity_id"] is not None
+    assert result["winter_mode_entity_id"] is not None
 
     assert len(result["zones"]) == 1
     zone = result["zones"][0]

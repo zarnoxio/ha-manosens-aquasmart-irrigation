@@ -12,7 +12,7 @@ from homeassistant.core import HomeAssistant
 from homeassistant.data_entry_flow import FlowResult
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 
-from .api import AquaSmartApiClient, AquaSmartAuthError, AquaSmartConnectionError
+from .api import AquaSmartApiClient, AquaSmartApiError, AquaSmartAuthError
 from .const import (
     CONF_API_TOKEN,
     CONF_USE_HTTPS,
@@ -81,7 +81,7 @@ class AquaSmartConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 title = await _validate_and_get_title(self.hass, user_input)
             except AquaSmartAuthError:
                 errors["base"] = "invalid_auth"
-            except AquaSmartConnectionError:
+            except AquaSmartApiError:  # unreachable, or refused with a non-2xx
                 errors["base"] = "cannot_connect"
             except UnsupportedSchemaVersion:
                 errors["base"] = "unsupported_schema_version"
@@ -108,7 +108,7 @@ class AquaSmartConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 await _validate_and_get_title(self.hass, new_data)
             except AquaSmartAuthError:
                 errors["base"] = "invalid_auth"
-            except AquaSmartConnectionError:
+            except AquaSmartApiError:  # unreachable, or refused with a non-2xx
                 errors["base"] = "cannot_connect"
             except UnsupportedSchemaVersion:
                 errors["base"] = "unsupported_schema_version"

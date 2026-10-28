@@ -10,11 +10,12 @@ Home Assistant custom integration for the [AquaSmart irrigation controller](http
 - Switches: main water supply, winter mode, vacation mode, and one per irrigation zone. A zone switch **always** turns the zone on for a bounded duration, never indefinitely — the controller enforces the cutoff itself, independent of Home Assistant.
 - Numbers: per-zone manual-start duration (`number.<zone>_duration`, default 600s/10min, 1–86400s) — adjust right from the dashboard how long `switch.<zone>` runs for; persists across HA restarts.
 - Sensors: inverter pressure/frequency/current, per-zone water deficit, session volume and next scheduled action, tank level, flow rate and totalizer.
-- Binary sensors: inverter fault, inverter running, suspended.
-- Buttons: force-close all valves, reset inverter fault.
+- Binary sensors: inverter fault, inverter running, suspended, and **winter mode: valves not open** (a `problem` sensor — on when winter mode is active but the controller could not confirm the pump stopped, so it did not open the valves and water may freeze; good for a notification automation).
+- Buttons: force-close all valves (unavailable in winter mode — the valves are then held open on purpose), reset inverter fault.
 - Services: `aquasmart_irrigation.start_zone` (custom duration), `aquasmart_irrigation.suspend` (hours or vacation mode).
+- Winter mode: the controller stops the pump, confirms it stopped, then opens every valve to drain. While it is active, zone starts, turning main water on and closing valves are refused, and Home Assistant shows the controller's own reason (e.g. *"Počas zimného režimu nemožno spúšťať zóny."*) instead of a generic error. `switch.<…>_winter_mode` has a `valves_open` attribute.
 - Config Flow setup (no YAML), with automatic re-authentication if the API token is revoked.
-- **AquaSmart Flow Card** — a Lovelace dashboard card showing a real-time hydraulic diagram (tank → pump/pressure → flow meter → zones), mirroring the controller's own web UI. Registered automatically after setup, no manual "Resources" step. Add it via **Edit Dashboard → Add Card → AquaSmart Flow Card** and pick your controller device.
+- **AquaSmart Flow Card** — a Lovelace dashboard card showing a real-time hydraulic diagram (tank → pump/pressure → flow meter → zones), mirroring the controller's own web UI. Registered automatically after setup, no manual "Resources" step. In winter mode the card shows the open valves as draining (*VYPÚŠŤANIE*), with no flow animation and no close buttons. Add it via **Edit Dashboard → Add Card → AquaSmart Flow Card** and pick your controller device.
 
 ## Requirements
 
